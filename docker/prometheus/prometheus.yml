@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: home-server
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # Traefik exposes prometheus metrics on its built-in `traefik` entrypoint.
+  - job_name: traefik
+    static_configs:
+      - targets: ['traefik:8080']
+
+  - job_name: n8n
+    static_configs:
+      - targets: ['n8n:5678']
+
+  # Host-level metrics. Uncomment once a node-exporter container is added
+  # to the docker-compose stack.
+  # - job_name: node
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']

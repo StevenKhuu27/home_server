@@ -40,7 +40,7 @@ resource "null_resource" "cloud_init_config_files" {
   }
 }
 
-# The Ansible control node — a small VM whose only job is to run playbooks
+# The Ansible control node - a small VM whose only job is to run playbooks
 # against the rest of the homelab. Kept intentionally minimal (1 vCPU / 2 GiB).
 resource "proxmox_vm_qemu" "ansible_host" {
   name        = var.vm_name
@@ -67,7 +67,7 @@ resource "proxmox_vm_qemu" "ansible_host" {
         }
       }
     }
-    # Cloud-init drive — replaces the deprecated `cloudinit_cdrom_storage`
+    # Cloud-init drive - replaces the deprecated `cloudinit_cdrom_storage`
     # argument from older versions of the Telmate provider.
     ide {
       ide2 {

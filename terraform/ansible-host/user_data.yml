@@ -1,48 +1,55 @@
 #cloud-config
+# Cloud-init user-data for the Ansible control node.
+# Creates an unprivileged `ansible` user, installs the minimum tools needed
+# to run playbooks, and hardens SSH and the firewall before first login.
 
 package_update: true
 package_upgrade: true
 package_reboot_if_required: true
+
 users:
   - name: ansible
     groups: sudo
     shell: /bin/bash
-    sudo: ALL=(ALL) 
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    lock_passwd: true
     ssh_authorized_keys:
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOgztncKIjbQyM0YMSeHCAhR87PMuXPIQslbjLebNef3 steven@windows
+
 disable_root: true
 ssh_pwauth: false
 
 packages:
-  - fail2ban
-  - ufw
-  - qemu-guest-agent
-  - curl
-  - vim
-  - htop
-  - git
   - ansible
+  - curl
+  - fail2ban
+  - git
+  - htop
+  - qemu-guest-agent
+  - ufw
+  - unattended-upgrades
+  - vim
+
+# Drop SSH hardening into a config.d snippet rather than sed-editing the main
+# sshd_config; the drop-in survives package upgrades and is easy to reason
+# about. The sshd_config.d directory is included by default on Ubuntu 22.04+.
+write_files:
+  - path: /etc/ssh/sshd_config.d/99-hardening.conf
+    owner: root:root
+    permissions: "0644"
+    content: |
+      PasswordAuthentication no
+      PubkeyAuthentication yes
+      PermitRootLogin no
+      KbdInteractiveAuthentication no
 
 runcmd:
-  # Enable qemu agent
   - systemctl enable --now qemu-guest-agent
-  - systemctl start qemu-guest-agent
-
-  # Configure UFW
   - ufw default deny incoming
   - ufw default allow outgoing
   - ufw allow OpenSSH
-  - ufw allow 22/tcp
   - ufw --force enable
-
-  # Harden SSH
-  - sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
-  - sed -i 's/^#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config
-  - sed -i 's/^#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
   - systemctl restart ssh
-
-  # Enable automatic security updates
-  - apt install -y unattended-upgrades
   - dpkg-reconfigure -f noninteractive unattended-upgrades
 
-final_message: "Ansible host setup is complete"
+final_message: "Ansible control node provisioning complete."

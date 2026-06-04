@@ -1,0 +1,33 @@
+# Traefik static configuration.
+# Dynamic routes are picked up from container labels in docker-compose.yml.
+
+api:
+  dashboard: true
+  # insecure: false means the dashboard is only reachable through a routed
+  # service guarded by basic-auth middleware (see traefik labels in
+  # ../docker-compose.yml).
+  insecure: false
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  docker:
+    exposedByDefault: false
+    network: proxy
+
+log:
+  level: INFO
+
+accessLog: {}
+
+# Expose prometheus-format metrics on the built-in `traefik` entrypoint
+# (port 8080 inside the container). Prometheus reaches it over the docker
+# network without the port needing to be published on the host.
+metrics:
+  prometheus:
+    addEntryPointsLabels: true
+    addRoutersLabels: true
+    addServicesLabels: true
+    entryPoint: traefik

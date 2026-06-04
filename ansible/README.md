@@ -1,4 +1,4 @@
-# Ansible — homelab configuration
+# Ansible - homelab configuration
 
 Configures the Docker host VM that Terraform provisions and brings up the
 container stacks (AdGuard Home, reverse proxy, Cloudflare Tunnel).
@@ -11,7 +11,7 @@ ansible/
 ├── requirements.yml          # Galaxy collections (community.docker, ansible.posix)
 ├── inventory/
 │   ├── inventory             # Real inventory (gitignored)
-│   └── inventory.example     # Template — copy and fill in
+│   └── inventory.example     # Template - copy and fill in
 ├── playbooks/
 │   ├── input_ssh_key.yml     # One-shot bootstrap (needs vault password)
 │   └── docker-host.yml       # Day-to-day configure + deploy
@@ -36,10 +36,10 @@ ansible/
 ## Running
 
 ```bash
-# First time only — installs the GitHub deploy key and Cloudflare token.
+# First time only - installs the GitHub deploy key and Cloudflare token.
 ansible-playbook playbooks/input_ssh_key.yml --ask-vault-pass
 
-# Every subsequent run — idempotent configure + deploy.
+# Every subsequent run - idempotent configure + deploy.
 ansible-playbook playbooks/docker-host.yml
 ```
 

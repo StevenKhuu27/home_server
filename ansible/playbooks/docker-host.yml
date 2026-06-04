@@ -1,6 +1,6 @@
 ---
 # Day-to-day playbook: configures the Docker host and brings up the compose
-# stacks. Does not need the vault password — secrets are seeded once by
+# stacks. Does not need the vault password - secrets are seeded once by
 # input_ssh_key.yml. Run with: ansible-playbook playbooks/docker-host.yml
 
 - name: Configure docker host and deploy stacks

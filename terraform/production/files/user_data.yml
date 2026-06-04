@@ -1,4 +1,9 @@
 #cloud-config
+# Cloud-init user-data for the docker host VM.
+# Creates the human operator (`steven`) and the automation user (`ansible`),
+# hardens SSH and the firewall, and pre-seeds GitHub's host key so Ansible's
+# first-time clone doesn't prompt. Docker itself is installed later by the
+# Ansible role rather than here, so this file stays small and fast.
 
 package_update: true
 package_upgrade: true
@@ -6,61 +11,59 @@ package_reboot_if_required: true
 
 users:
   - name: steven
-    groups: sudo, admin
+    groups: [sudo, admin]
     shell: /bin/bash
-    sudo: ALL=(ALL) 
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    lock_passwd: true
     ssh_authorized_keys:
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOgztncKIjbQyM0YMSeHCAhR87PMuXPIQslbjLebNef3 steven@windows
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEolNt/xCxyTL8Beh7n8Du+VBsxFEKfzL2IfVzYf/DM1 ansible@ubuntu
   - name: ansible
     groups: sudo
     shell: /bin/bash
-    sudo: ALL=(ALL) 
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    lock_passwd: true
     ssh_authorized_keys:
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEolNt/xCxyTL8Beh7n8Du+VBsxFEKfzL2IfVzYf/DM1 ansible@ubuntu
+
 disable_root: true
 ssh_pwauth: false
 
 packages:
-  - fail2ban
-  - ufw
-  - qemu-guest-agent
   - curl
-  - vim
+  - fail2ban
   - htop
-  # - docker.io
-  # - docker-compose
-  # - git
+  - qemu-guest-agent
+  - ufw
+  - unattended-upgrades
+  - vim
+
+# Drop SSH hardening into a config.d snippet rather than sed-editing the main
+# sshd_config; the drop-in survives package upgrades and is easy to reason
+# about. The sshd_config.d directory is included by default on Ubuntu 22.04+.
+write_files:
+  - path: /etc/ssh/sshd_config.d/99-hardening.conf
+    owner: root:root
+    permissions: "0644"
+    content: |
+      PasswordAuthentication no
+      PubkeyAuthentication yes
+      PermitRootLogin no
+      KbdInteractiveAuthentication no
 
 runcmd:
-  # Enable qemu agent
   - systemctl enable --now qemu-guest-agent
-  - systemctl start qemu-guest-agent
-
-  # Configure UFW
   - ufw default deny incoming
   - ufw default allow outgoing
   - ufw allow OpenSSH
   - ufw --force enable
-  - ufw allow 22/tcp
-
-  # Harden SSH
-  - sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
-  - sed -i 's/^#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config
-  - sed -i 's/^#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
   - systemctl restart ssh
-
-  # Enable automatic security updates
-  - apt install -y unattended-upgrades
   - dpkg-reconfigure -f noninteractive unattended-upgrades
-
-  - mkdir -p /home/steven/.ssh
-  - chown -R steven:steven /home/steven
-  - chmod 700 /home/steven/.ssh
-  - ssh-keyscan github.com >> /home/steven/.ssh/known_hosts
+  # Pre-seed github.com's host key so Ansible's git clone doesn't fail or
+  # prompt interactively on first run.
+  - install -d -o steven -g steven -m 0700 /home/steven/.ssh
+  - ssh-keyscan -t ed25519 github.com >> /home/steven/.ssh/known_hosts
   - chown steven:steven /home/steven/.ssh/known_hosts
+  - install -d -o steven -g steven -m 0755 /home/steven/app
 
-  - mkdir -p /home/steven/app
-  - chown -R steven:steven /home/steven/app
-
-final_message: "Golden image provisioning complete."
+final_message: "Docker host provisioning complete."

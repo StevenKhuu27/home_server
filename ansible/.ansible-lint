@@ -1,0 +1,17 @@
+---
+profile: basic
+
+exclude_paths:
+  - .cache/
+  - collections/
+  - inventory/inventory
+
+# Homelab patterns that don't warrant role-name lint failures.
+skip_list:
+  - role-name           # The `docker` role keeps its short name on purpose.
+  - fqcn[action-core]   # `import_tasks` etc. read fine without ansible.builtin.
+  - var-naming[no-role-prefix]
+
+# Vault file is encrypted at rest; ansible-lint can't parse it.
+warn_list:
+  - yaml[line-length]

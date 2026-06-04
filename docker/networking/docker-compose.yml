@@ -1,0 +1,70 @@
+# Networking stack: DNS, container UI, and the Cloudflare tunnel that
+# publishes selected services to the public internet.
+# Lives in its own compose project so the public-facing tunnel can be
+# stopped or replaced without touching the app stack in ../docker-compose.yml.
+#
+# Run from this directory after creating .env:
+#   docker compose up -d
+
+name: adguardhome
+
+services:
+  adguardhome:
+    image: adguard/adguardhome
+    container_name: adguardhome
+    restart: unless-stopped
+    ports:
+      # DNS server, claimed on the host by disabling systemd-resolved's stub
+      # listener (see ansible/roles/docker/tasks/docker-package.yml).
+      - 53:53/tcp
+      - 53:53/udp
+      # Initial-setup wizard - safe to remove once configured via Traefik.
+      - 3000:3000/tcp
+    volumes:
+      # Config is rendered by Ansible from AdGuardHome.yml.j2 into this dir.
+      - /opt/stacks/adguardhome:/opt/adguardhome/conf
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.adguardhome.rule=Host(`adguard.${DOMAIN_SUFFIX}`)
+      - traefik.http.routers.adguardhome.entrypoints=web
+      - traefik.http.services.adguardhome.loadbalancer.server.port=3000
+
+  portainer:
+    image: portainer/portainer-ce:sts
+    container_name: portainer
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - portainer_data:/data
+    ports:
+      - 9443:9443
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.portainer.rule=Host(`portainer.${DOMAIN_SUFFIX}`)
+      - traefik.http.routers.portainer.entrypoints=web
+      - traefik.http.services.portainer.loadbalancer.server.port=9000
+
+  # Cloudflare Tunnel exposes selected services to the public internet
+  # without opening any inbound ports on the home router. The token is issued
+  # in the Cloudflare Zero Trust dashboard.
+  tunnel:
+    image: cloudflare/cloudflared
+    container_name: cloudflared-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
+    networks:
+      - proxy
+
+volumes:
+  portainer_data:
+    name: portainer_data
+
+networks:
+  proxy:
+    external: true
