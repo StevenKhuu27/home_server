@@ -1,0 +1,13 @@
+# Copy this file to `inventory` (which is gitignored) and fill in real values.
+#
+# Each host runs in two groups intentionally:
+#   - [docker]  -> connects as the `ansible` system user with sudo, used for
+#                  privileged setup (package install, services, networks).
+#   - [github]  -> connects as `steven` (no sudo) so the cloned repo is owned
+#                  by the human user that operates the stack day-to-day.
+
+[docker]
+docker-host ansible_host=10.0.0.10 ansible_user=ansible ansible_ssh_private_key_file=~/.ssh/ansible_host
+
+[github]
+docker-host ansible_host=10.0.0.10 ansible_user=steven ansible_ssh_private_key_file=~/.ssh/ansible_host

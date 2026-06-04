@@ -1,0 +1,89 @@
+---
+# One-shot bootstrap that wires up the secrets the docker-host needs to talk
+# to GitHub and Cloudflare. Kept separate from docker-host.yml so day-to-day
+# runs don't have to prompt for the Ansible Vault password every time.
+#
+# Run with: ansible-playbook playbooks/input_ssh_key.yml --ask-vault-pass
+
+- name: Install GitHub deploy key and runtime secrets on the docker host
+  hosts: docker
+  become: true
+  vars_files:
+    - ../vars/vault.yml
+
+  tasks:
+    - name: Ensure /home/steven/app exists and is owned by steven
+      ansible.builtin.file:
+        path: /home/steven/app
+        state: directory
+        owner: steven
+        group: steven
+        mode: "0755"
+        recurse: true
+
+    - name: Ensure /home/steven/.ssh exists with tight permissions
+      ansible.builtin.file:
+        path: /home/steven/.ssh
+        state: directory
+        owner: steven
+        group: steven
+        mode: "0700"
+
+    - name: Install GitHub deploy key
+      ansible.builtin.copy:
+        content: "{{ github_deploy_key }}"
+        dest: /home/steven/.ssh/id_ed25519_github
+        owner: steven
+        group: steven
+        mode: "0600"
+
+    - name: Add github.com to known_hosts
+      ansible.builtin.known_hosts:
+        path: /home/steven/.ssh/known_hosts
+        name: github.com
+        key: "{{ lookup('pipe', 'ssh-keyscan -t ed25519 github.com') }}"
+
+    - name: Configure ssh client to use the deploy key for github.com
+      ansible.builtin.copy:
+        dest: /home/steven/.ssh/config
+        owner: steven
+        group: steven
+        mode: "0600"
+        content: |
+          Host github.com
+            HostName github.com
+            User git
+            IdentityFile ~/.ssh/id_ed25519_github
+            IdentitiesOnly yes
+
+    - name: Ensure networking compose dir exists
+      ansible.builtin.file:
+        path: /home/steven/app/networking
+        state: directory
+        owner: steven
+        group: steven
+        mode: "0755"
+
+    - name: Write Cloudflare tunnel token into the networking .env
+      ansible.builtin.copy:
+        dest: /home/steven/app/networking/.env
+        owner: steven
+        group: steven
+        mode: "0600"
+        content: |
+          TUNNEL_TOKEN={{ cloudflare_tunnel_token }}
+
+# Second play seeds the repo as the `steven` user so the cloned files are
+# owned by the human operator, not root. Subsequent updates in
+# roles/docker/tasks/docker-start.yml refresh this checkout.
+- name: Clone homelab repo as the steven user
+  hosts: github
+  become: false
+  tasks:
+    - name: Clone homelab repo
+      ansible.builtin.git:
+        repo: "git@github.com:StevenKhuu27/homelab.git"
+        dest: /home/steven/app
+        version: main
+        key_file: /home/steven/.ssh/id_ed25519_github
+        accept_hostkey: true

@@ -1,0 +1,52 @@
+---
+# Pull the application repo and bring up the compose stacks.
+# Runs as root (the play sets become: true); the cloned files are owned by
+# steven so the human user can edit them post-deploy.
+
+- name: Show project root (verbose runs only)
+  ansible.builtin.debug:
+    msg: "Cloning homelab repo into {{ steven_project_root }}"
+    verbosity: 1
+
+- name: Clone homelab repo
+  ansible.builtin.git:
+    repo: "git@github.com:StevenKhuu27/homelab.git"
+    dest: "{{ steven_project_root }}"
+    version: main
+    key_file: /home/steven/.ssh/id_ed25519_github
+    accept_hostkey: true
+    # force overwrites local edits on every run - fine because the repo is
+    # the source of truth and any host-side tweaks belong in Ansible vars.
+    force: true
+
+- name: Ensure /opt/stacks directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - /opt/stacks
+    - /opt/stacks/adguardhome
+
+- name: Deploy AdGuardHome configuration
+  ansible.builtin.template:
+    src: AdGuardHome.yml.j2
+    dest: /opt/stacks/adguardhome/AdGuardHome.yaml
+    mode: "0644"
+
+# The `proxy` network is shared by multiple compose stacks (reverse proxy,
+# adguard, networking). Creating it explicitly avoids a race where two
+# stacks try to create it on first boot.
+- name: Create shared proxy docker network
+  community.docker.docker_network:
+    name: proxy
+
+- name: Bring up the root compose stack
+  community.docker.docker_compose_v2:
+    project_src: "{{ steven_project_root }}"
+  register: root_stack
+
+- name: Bring up the networking compose stack (cloudflared tunnel, etc.)
+  community.docker.docker_compose_v2:
+    project_src: "{{ steven_project_root }}/networking"
+  register: networking_stack

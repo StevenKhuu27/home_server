@@ -1,0 +1,14 @@
+---
+# Copy to vault.yml and encrypt with: ansible-vault encrypt vars/vault.yml
+#
+# The real vault.yml is committed AES-encrypted; this plaintext template
+# exists so future readers know which variable names are expected.
+
+# Private SSH key (PEM) authorised as a GitHub deploy key on the homelab repo.
+github_deploy_key: |
+  -----BEGIN OPENSSH PRIVATE KEY-----
+  ...replace with real key contents...
+  -----END OPENSSH PRIVATE KEY-----
+
+# Cloudflare Tunnel token written into networking/.env as TUNNEL_TOKEN.
+cloudflare_tunnel_token: "REPLACE_WITH_REAL_CLOUDFLARE_TUNNEL_TOKEN"

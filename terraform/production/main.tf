@@ -64,7 +64,7 @@ resource "proxmox_vm_qemu" "docker_host" {
         }
       }
     }
-    # Cloud-init drive — replaces the deprecated `cloudinit_cdrom_storage`
+    # Cloud-init drive replaces the deprecated `cloudinit_cdrom_storage`
     # argument from older versions of the Telmate provider.
     ide {
       ide2 {

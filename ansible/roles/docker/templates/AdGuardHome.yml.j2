@@ -1,0 +1,44 @@
+dns:
+  cache:
+    enabled: true
+
+  server:
+    bind_retry:
+      enabled: true
+      interval: 1s
+      count: 4
+    listen_addresses:
+      - address: '0.0.0.0:53'
+
+  bootstrap:
+    servers:
+      - address: '1.1.1.1:53'
+      - address: '1.0.0.1:53'
+    timeout: 2s
+
+  upstream:
+    groups:
+      default:
+        address: 'https://dns.cloudflare.com/dns-query'
+    timeout: 2s
+
+  fallback:
+    servers:
+      - address: 'tls://1.1.1.1'
+      - address: 'tls://1.0.0.1'
+    timeout: 2s
+
+  rewrites:
+    - domain: '*.home.arpa'
+      answer: '{{ ansible_default_ipv4.address }}'
+
+http:
+  address: '0.0.0.0:3000'
+
+log:
+  output: 'stdout'
+  format: 'text'
+  timestamp: true
+  verbose: false
+
+schema_version: 3

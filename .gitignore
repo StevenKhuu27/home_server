@@ -23,8 +23,22 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
-# NOTE: .terraform.lock.hcl IS committed on purpose - it pins provider
-# versions/hashes so collaborators get a reproducible build.
+# NOTE: .terraform.lock.hcl committed on purpose to gurantee version consistency.
+
+# --- Ansible ---
+
+# Real inventory (may leak internal IPs) - example template is committed
+ansible/inventory/inventory
+!ansible/inventory/inventory.example
+
+# Retry files and local collection cache
+*.retry
+ansible/collections/
+
+# Vault password files - never commit these
+.vault_pass
+.vault_pass.txt
+vault_password_file
 
 # --- Secrets ---
 .env

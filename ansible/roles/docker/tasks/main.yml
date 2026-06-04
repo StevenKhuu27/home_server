@@ -1,0 +1,6 @@
+---
+- name: Install Docker and configure host
+  ansible.builtin.import_tasks: docker-package.yml
+
+- name: Deploy compose stacks
+  ansible.builtin.import_tasks: docker-start.yml
