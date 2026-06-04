@@ -63,8 +63,8 @@
     regexp: "^#?DNSStubListener="
     line: "DNSStubListener=no"
   notify:
-    - restart systemd-resolved
-    - restart docker
+    - Restart systemd-resolved
+    - Restart docker
 
 - name: Flush handlers before continuing
   ansible.builtin.meta: flush_handlers

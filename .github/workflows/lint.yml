@@ -55,6 +55,11 @@ jobs:
         run: pip install ansible ansible-lint
       - name: Install collection dependencies
         run: ansible-galaxy collection install -r ansible/requirements.yml
+      # ansible-lint runs `ansible-playbook --syntax-check`, which loads
+      # vars_files. The real vault.yml is encrypted and CI has no password,
+      # so swap in the plaintext example just for lint.
+      - name: Provide plaintext vault for syntax check
+        run: cp ansible/vars/vault.yml.example ansible/vars/vault.yml
       - name: ansible-lint
         working-directory: ansible
         run: ansible-lint
