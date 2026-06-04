@@ -4,7 +4,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 # ffmpeg is required by yt-dlp to merge separate video/audio streams.
-# hadolint ignore=DL3008  # version pin is not stable across debian point releases
+# Apt version pins for ffmpeg are not stable across debian point releases, so
+# we accept the unpinned warning here rather than break the build on rebuild.
+# hadolint ignore=DL3008
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ffmpeg \
     && rm -rf /var/lib/apt/lists/*

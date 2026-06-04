@@ -25,3 +25,5 @@ ignore: |
   **/.terraform/
   ansible/vars/vault.yml
   **/*.tfstate*
+  # cloud-init files require a `#cloud-config` magic header with no space.
+  terraform/**/user_data.yml
