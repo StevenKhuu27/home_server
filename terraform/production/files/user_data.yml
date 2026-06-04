@@ -1,0 +1,66 @@
+#cloud-config
+
+package_update: true
+package_upgrade: true
+package_reboot_if_required: true
+
+users:
+  - name: steven
+    groups: sudo, admin
+    shell: /bin/bash
+    sudo: ALL=(ALL) 
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOgztncKIjbQyM0YMSeHCAhR87PMuXPIQslbjLebNef3 steven@windows
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEolNt/xCxyTL8Beh7n8Du+VBsxFEKfzL2IfVzYf/DM1 ansible@ubuntu
+  - name: ansible
+    groups: sudo
+    shell: /bin/bash
+    sudo: ALL=(ALL) 
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEolNt/xCxyTL8Beh7n8Du+VBsxFEKfzL2IfVzYf/DM1 ansible@ubuntu
+disable_root: true
+ssh_pwauth: false
+
+packages:
+  - fail2ban
+  - ufw
+  - qemu-guest-agent
+  - curl
+  - vim
+  - htop
+  # - docker.io
+  # - docker-compose
+  # - git
+
+runcmd:
+  # Enable qemu agent
+  - systemctl enable --now qemu-guest-agent
+  - systemctl start qemu-guest-agent
+
+  # Configure UFW
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow OpenSSH
+  - ufw --force enable
+  - ufw allow 22/tcp
+
+  # Harden SSH
+  - sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+  - sed -i 's/^#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+  - sed -i 's/^#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
+  - systemctl restart ssh
+
+  # Enable automatic security updates
+  - apt install -y unattended-upgrades
+  - dpkg-reconfigure -f noninteractive unattended-upgrades
+
+  - mkdir -p /home/steven/.ssh
+  - chown -R steven:steven /home/steven
+  - chmod 700 /home/steven/.ssh
+  - ssh-keyscan github.com >> /home/steven/.ssh/known_hosts
+  - chown steven:steven /home/steven/.ssh/known_hosts
+
+  - mkdir -p /home/steven/app
+  - chown -R steven:steven /home/steven/app
+
+final_message: "Golden image provisioning complete."

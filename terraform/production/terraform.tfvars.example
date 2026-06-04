@@ -1,0 +1,23 @@
+# Copy this file to terraform.tfvars and fill in real values.
+# terraform.tfvars is gitignored so secrets stay local.
+
+# Proxmox API
+pm_api_url          = "https://proxmox.lan:8006/api2/json"
+pm_api_token_id     = "terraform@pam!terraform-token"
+pm_api_token_secret = "REPLACE_WITH_REAL_UUID_TOKEN_SECRET"
+
+# Proxmox host (used by SSH file provisioner to upload the cloud-init snippet)
+pve_user = "root"
+pve_host = "proxmox.lan"
+pve_node = "home_node"
+
+# Local SSH keys
+ssh_private_key_path = "~/.ssh/id_ed25519"
+ssh_public_key_path  = "~/.ssh/id_ed25519.pub"
+
+# VM
+vm_name     = "docker-host"
+vm_template = "VM-ubuntu-24.04-cloud-init-template"
+ci_user     = "steven"
+vm_cores    = 2
+vm_memory   = 4096

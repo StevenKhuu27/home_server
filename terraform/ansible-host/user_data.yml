@@ -1,0 +1,48 @@
+#cloud-config
+
+package_update: true
+package_upgrade: true
+package_reboot_if_required: true
+users:
+  - name: ansible
+    groups: sudo
+    shell: /bin/bash
+    sudo: ALL=(ALL) 
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOgztncKIjbQyM0YMSeHCAhR87PMuXPIQslbjLebNef3 steven@windows
+disable_root: true
+ssh_pwauth: false
+
+packages:
+  - fail2ban
+  - ufw
+  - qemu-guest-agent
+  - curl
+  - vim
+  - htop
+  - git
+  - ansible
+
+runcmd:
+  # Enable qemu agent
+  - systemctl enable --now qemu-guest-agent
+  - systemctl start qemu-guest-agent
+
+  # Configure UFW
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow OpenSSH
+  - ufw allow 22/tcp
+  - ufw --force enable
+
+  # Harden SSH
+  - sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+  - sed -i 's/^#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config
+  - sed -i 's/^#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
+  - systemctl restart ssh
+
+  # Enable automatic security updates
+  - apt install -y unattended-upgrades
+  - dpkg-reconfigure -f noninteractive unattended-upgrades
+
+final_message: "Ansible host setup is complete"

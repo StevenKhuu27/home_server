@@ -1,0 +1,38 @@
+# --- Terraform ---
+
+**/.terraform/
+
+# State files (may contain secrets - never commit)
+*.tfstate
+*.tfstate.*
+
+# Variable files - but keep example templates
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Local CLI config and override files
+.terraformrc
+terraform.rc
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# NOTE: .terraform.lock.hcl IS committed on purpose - it pins provider
+# versions/hashes so collaborators get a reproducible build.
+
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
