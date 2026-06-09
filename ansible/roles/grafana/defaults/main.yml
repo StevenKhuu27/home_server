@@ -1,0 +1,17 @@
+---
+# Where the docker-compose project lives on the target host.
+# Inherited from playbook vars (steven_project_root) if set there.
+grafana_project_dir: "{{ steven_project_root | default('/home/steven/app/docker') }}"
+
+# Source path on the Ansible control node (this repo). Resolved relative to
+# the playbook file. playbook_dir = ansible/playbooks/, so ../../ = repo root.
+grafana_provisioning_src: "{{ playbook_dir }}/../../docker/grafana/provisioning"
+
+# Destination path on the target host. Mirrors the layout of the bind mount
+# declared in docker-compose.yml.
+grafana_provisioning_dest: "{{ grafana_project_dir }}/grafana/provisioning"
+
+# Ownership for provisioned files on the host. The container reads them
+# read-only, so they just need to be readable.
+grafana_file_owner: steven
+grafana_file_group: steven
